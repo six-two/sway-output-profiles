@@ -1,0 +1,15 @@
+profiles:
+  - name: "off"
+    commands: ['swaymsg "output * disable"']
+  - name: "all"
+    commands: ['swaymsg "output * enable"']
+  - name: "internal"
+    commands:
+      - swaymsg "output * enable"
+      - swaymsg "output HDMI-A-1 disable"
+  - name: "external"
+    commands:
+      - swaymsg "output * enable"
+      - swaymsg "output eDP-1 disable"
+
+
