@@ -11,6 +11,22 @@ import yaml
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 # Configure me here
 CONFIG_PATH = os.path.join(SCRIPT_DIR, "profiles.yaml")
+DEFAUTL_STATE_PATH = "/tmp/sway-output-profiles.txt"
+
+# State format:
+# If the last action was set: <current profile>
+# If the last action was toggle: <current profile>\n<previous profile>
+
+def read_state(config: dict) -> str:
+    file_path = config.get("state_path", DEFAUTL_STATE_PATH)
+    with open(file_path, "rb") as f:
+        return f.read().decode("utf-8")
+
+
+def write_state(config: dict, state: str) -> None:
+    file_path = config.get("state_path", DEFAUTL_STATE_PATH)
+    with open(file_path, "wb") as f:
+        f.write(state.encode("utf-8"))
 
 
 def check_field_type(obj: dict, field_name: str, expected_type: type) -> None:
@@ -32,6 +48,7 @@ def read_config(path: str) -> Dict:
         profiles = config.get("profiles")
         for profile in profiles:
             check_field_type(profile, "name", type("string"))
+            # TODO check for \n in name?
             check_field_type(profile, "commands", type(["list", "of", "strings"]))
         return config
     except Exception:
@@ -41,16 +58,20 @@ def read_config(path: str) -> Dict:
 
 
 def wrong_usage():
-    print("# To set the profile to a specific value, use this command:")
+    print("# =========================== Usage ===================================")
+    print("# List all possible profiles:")
+    print(f"{sys.argv[0]} list")
+    print()
+    print("# Show the current profile:")
+    print(f"{sys.argv[0]} get")
+    print()
+    print("# Activate a specific profile:")
     print(f"{sys.argv[0]} set <PROFILE_NAME>")
     print()
-    print("# To toggle between two profiles, use this command:")
+    print("# Toggle between two profiles:")
     print(f"{sys.argv[0]} toggle <PROFILE_NAME_1> [PROFILE_NAME_2]")
     print("# This will select PROFILE_NAME_1, unless PROFILE_NAME_1 is already active. In that case PROFILE_NAME_2 will be used.")
     print("# If you do not supply PROFILE_NAME_2, the currently active profile will be used as default value (or the previous, if PROFILE_NAME_1 is currently active).")
-    print()
-    print("# To list all possible profiles use this command:")
-    print(f"{sys.argv[0]} list")
 
     sys.exit(1)
 
@@ -62,13 +83,19 @@ def subcommand_list(config: dict) -> None:
         print(f" - {name}")
 
 
+def subcommand_get(config: dict) -> None:
+    state = read_state(config)
+    print(state.split("\n")[0])
+
+
 def subcommand_set(config: dict, profile_name: str) -> None:
     for profile in config["profiles"]:
         # Find the selected profile
         if profile["name"] == profile_name:
+            write_state(config, profile_name)
             for command in profile["commands"]:
                 subprocess.call([command], shell=True)
-            # TODO write name to file
+            return
 
     print(f"Error: Unknown profile '{profile_name}'!\n")
     subcommand_list(config)
@@ -83,9 +110,27 @@ if __name__ == "__main__":
     
     subcommand = args[0]
     if subcommand == "list":
+        if len(args) == 1:
+            subcommand_list(config)
+        else:
+            wrong_usage()
         subcommand_list(config)
+    elif subcommand == "get":
+        if len(args) == 1:
+            subcommand_get(config)
+        else:
+            wrong_usage()
     elif subcommand == "set":
         if len(args) == 2:
             subcommand_set(config, args[1])
         else:
             wrong_usage()
+    elif subcommand == "toggle":
+        if len(args) == 2:
+            pass
+        elif len(args) == 3:
+            pass
+        else:
+            wrong_usage()
+    else:
+        wrong_usage()

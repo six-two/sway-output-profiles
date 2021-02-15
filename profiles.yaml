@@ -1,3 +1,4 @@
+state_file: "/tmp/sway-output-profiles.txt"
 profiles:
   - name: "off"
     commands: ['swaymsg "output * disable"']
