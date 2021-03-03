@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Repository link: https://github.com/six-two/sway-output-profiles
 
 from typing import Dict
 import os
@@ -36,7 +37,7 @@ def check_field_type(obj: dict, field_name: str, expected_type: type) -> None:
             raise Exception(f"Invalid field type for '{field_name}': Expected {expected_type} but got {type(field)}. Raw data: {obj}")
     else:
         raise Exception(f"Missing field: '{field_name}'. Raw data: {obj}")
-    
+
 
 def read_config(path: str) -> Dict:
     with open(path, "rb") as f:
@@ -57,23 +58,25 @@ def read_config(path: str) -> Dict:
         sys.exit(1)
 
 
-def wrong_usage():
-    print("# =========================== Usage ===================================")
-    print("# List all possible profiles:")
-    print(f"{sys.argv[0]} list")
-    print()
-    print("# Show the current profile:")
-    print(f"{sys.argv[0]} get")
-    print()
-    print("# Activate a specific profile:")
-    print(f"{sys.argv[0]} set <PROFILE_NAME>")
-    print()
-    print("# Toggle between two profiles:")
-    print(f"{sys.argv[0]} toggle <PROFILE_NAME_1> [PROFILE_NAME_2]")
-    print("# This will select PROFILE_NAME_1, unless PROFILE_NAME_1 is already active. In that case PROFILE_NAME_2 will be used.")
-    print("# If you do not supply PROFILE_NAME_2, the currently active profile will be used as default value (or the previous, if PROFILE_NAME_1 is currently active).")
+def wrong_usage(error_code: int = 1):
+    program_name = sys.argv[0]
+    print(f"""
+# =========================== Usage ==================================
+# List all possible profiles:
+{program_name} list
 
-    sys.exit(1)
+# Show the current profile:
+{program_name} get
+
+# Activate a specific profile:
+{program_name} set <PROFILE_NAME>
+
+# Toggle between two profiles:
+{program_name} toggle <PROFILE_NAME_1> [PROFILE_NAME_2]
+# This will select PROFILE_NAME_1, unless PROFILE_NAME_1 is already active. In that case PROFILE_NAME_2 will be used.
+# If you do not supply PROFILE_NAME_2, the currently active profile will be used as default value (or the previous, if PROFILE_NAME_1 is currently active).
+    """.strip())
+    sys.exit(error_code)
 
 
 def apply_profile(profile_name: str) -> None:
@@ -137,7 +140,7 @@ if __name__ == "__main__":
         wrong_usage()
 
     config = read_config(CONFIG_PATH)
-    
+
     subcommand = args[0]
     if subcommand == "list":
         if len(args) == 1:
@@ -162,5 +165,8 @@ if __name__ == "__main__":
             subcommand_toggle(config, args[1], args[2])
         else:
             wrong_usage()
+    elif subcommand in ["--help", "-h"]:
+        # Exit with an OK status code (0). Everything else seems weird
+        wrong_usage(0)
     else:
         wrong_usage()
